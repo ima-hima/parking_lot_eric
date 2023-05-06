@@ -99,7 +99,7 @@ class ParkingLot:
 
     def is_full(self) -> bool:
         """
-        Return True if lot is full, False otherwise. Not this does not mean there
+        Return True if lot is full, False otherwise. Note this does not mean there
         is space for a van or a car, as for instance, only a single motorcycle
         space might be available.
         """
@@ -132,8 +132,8 @@ class ParkingLot:
         # vehicle type check for open spaces in increasing order of size.
 
         # Note that, for any given vehicle to be parked, a space is chosen at random,
-        # meaning that vans may be more difficult to park. I believe that currently
-        # Python sets are lrus, but choosing from an ordered list might be more
+        # meaning that over time vans may become more difficult to park. I believe
+        # that Python sets are lrus, but choosing from an ordered list might be more
         # efficient.
         if self.is_full():
             return -1

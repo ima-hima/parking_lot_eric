@@ -4,8 +4,8 @@ LABEL maintainer="eric"
 ENV PYTHONUNBUFFERED y
 
 COPY ./requirements.txt /tmp/requirements.txt
-COPY ./parking /parking
-WORKDIR /parking
+COPY ./parking_lot /parking_lot
+WORKDIR /parking_lot
 EXPOSE 8000
 
 ARG DEV=false
