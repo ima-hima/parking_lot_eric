@@ -133,7 +133,6 @@ def unpark(space_number: int):
     given space has not been tracked.
     """
     space_vals = ParkingPlace.objects.values("status", "vehicle_type").get(id=space_number)
-    print(space_number, space_vals["vehicle_type"], space_vals["status"])
     if space_vals["vehicle_type"] == "Motorcycle" or space_vals["vehicle_type"] == "Van":
         # We don't have to worry about the special case of a van taking three
         # spaces.

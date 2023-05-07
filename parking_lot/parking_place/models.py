@@ -31,6 +31,3 @@ class ParkingPlace(models.Model):
 
     def __str__(self):
         return f"{self.vehicle_type}:{self.status}"
-
-    # class Meta:
-    #     db_table = "parking_lot"
