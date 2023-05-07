@@ -1,8 +1,6 @@
 from django.test import TestCase
 import json
 
-"""Tests for recipe apis"""
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -14,6 +12,7 @@ from parking_place.views import (
     is_full,
     park,
     set_place_values,
+    unpark,
 )
 
 # RECIPES_URL = reverse('recipe-list')
@@ -43,8 +42,10 @@ def create_parking_lot(num_places, **options):
 
 
 class ParkingLotApiTests(TestCase):
-    def setUp(self):
-        pass
+    """
+    Note that in all following tests the id numbers are dependent on the order
+    in which the tests are run, so it's a bit fragile.
+    """
 
     def test_create_parking_place(self):
         space = create_parking_place()
@@ -130,9 +131,41 @@ class ParkingLotApiTests(TestCase):
         set_place_values(lot[4].id, vehicle_type="Van")
         res = park("van")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(23, json.loads(res.content)["id"])
+        self.assertEqual(37, json.loads(res.content)["id"])
         lot = ParkingPlace.objects.all().order_by("id")
         self.assertEqual(
             [str(l) for l in lot],
-            ["Car:Full", "Car:Empty", "Car:Empty", "Car:Empty", "Van:Full"],
+            ["Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty", "Van:Full"],
+        )
+
+    def test_park_van_in_car_spot_success(self):
+        lot = create_parking_lot(5)
+        res = park("van")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(29, json.loads(res.content)["id"])
+        lot = ParkingPlace.objects.all().order_by("id")
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Adjacent", "Car:Van", "Car:Adjacent", "Car:Empty", "Car:Empty"],
+        )
+
+
+    def test_unpark_van_taking_three_spaces(self):
+        lot = create_parking_lot(5)
+        res = park("van")
+        self.assertEqual(res.status_code, 200)
+        return_id = json.loads(res.content)["id"]
+        self.assertEqual(44, return_id)
+        lot = ParkingPlace.objects.all().order_by("id")
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Adjacent", "Car:Van", "Car:Adjacent", "Car:Empty", "Car:Empty"],
+        )
+        # Now, unpark it.
+        success = json.loads(unpark(return_id).content)['success']
+        assert success
+        lot = ParkingPlace.objects.all().order_by("id")
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty"]
         )

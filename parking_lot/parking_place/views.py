@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
+from django.db import connection
 
 from parking_place.models import ParkingPlace
 
@@ -63,18 +64,18 @@ def park(vehicle_type: str) -> int:
     if vehicle_type.lower() == "motorcycle":
         # Check first for motorcycle spaces, then cars spaces, then van spaces.
         if space_dict["motorcycle"]:
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Motorcycle") & Q(status="Empty")
-            ).id
+            )[0]["id"]
         elif space_dict["car"]:
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Car") & Q(status="Empty")
-            ).id
+            )[0]["id"]
         else:
             # There must be a van space available.
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Van") & Q(status="Empty")
-            ).id
+            )[0]["id"]
         set_place_values(space_number, status="Full")
         return JsonResponse({"id": space_number})
     elif vehicle_type.lower() == "car":
@@ -85,38 +86,37 @@ def park(vehicle_type: str) -> int:
             )[0]["id"]
         else:
             # There must be a van space available.
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Van") & Q(status="Empty")
-            ).id
+            )[0]["id"]
         set_place_values(space_number, status="Full")
         return JsonResponse({"id": space_number})
     elif vehicle_type.lower() == "van":
         # It's a van. Look for van spaces, if not available try for three
         # car spaces.
         if space_dict["van"]:
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Van") & Q(status="Empty")
-            ).id
+            )[0]["id"]
             set_place_values(space_number, status="Full")
+            return JsonResponse({"id": space_number})
         elif space_dict["car"] > 2:
-            space_number = ParkingPlace.objects.raw(
-                "SELECT id FROM parking_place p"
-                "              JOIN parking_place q"
-                "              JOIN park_place r"
-                'WHERE p.vehicle_type="Car"'
-                '  AND p.status="Empty"'
-                '  AND q.vehicle_type="Car"'
-                '  AND q.status="Empty"'
-                '  AND r.vehicle_type="Car"'
-                '  AND r.status="Empty"'
-                "  AND q.id = p.id - 1"
-                "  AND r.id = p.id + 1"
-                "LIMIT 1;"
-            )
-            if space_number:
-                set_place_values(space_number, status="Full")
+            with connection.cursor() as cursor:
+                cursor.execute("""SELECT p.id FROM parking_place_parkingplace p
+                                  JOIN parking_place_parkingplace q ON p.id - 1 = q.id
+                                  JOIN parking_place_parkingplace r ON p.id + 1 = r.id
+                    WHERE p.vehicle_type = 'Car'
+                      AND p.status = 'Empty'
+                      AND q.vehicle_type = 'Car'
+                      AND q.status='Empty'
+                      AND r.vehicle_type='Car'
+                      AND r.status='Empty'
+                    LIMIT 1;""")
+                space_number = cursor.fetchone()[0]
+                set_place_values(space_number, status="Van")
                 set_place_values(space_number - 1, status="Adjacent")
                 set_place_values(space_number + 1, status="Adjacent")
+                return JsonResponse({"id": space_number})
         else:
             # There were no van spaces and not enough car spaces.
             return JsonResponse({"id": -1})
@@ -132,7 +132,30 @@ def unpark(space_number: int):
     otherwise. Only a boolean is returned because the type of vehicle in a
     given space has not been tracked.
     """
-    pass
+    space_vals = ParkingPlace.objects.values("status", "vehicle_type").get(id=space_number)
+    print(space_number, space_vals["vehicle_type"], space_vals["status"])
+    if space_vals["vehicle_type"] == "Motorcycle" or space_vals["vehicle_type"] == "Van":
+        # We don't have to worry about the special case of a van taking three
+        # spaces.
+        set_place_values(space_number, status="Empty")
+        return JsonResponse({"success": True})
+
+    if space_vals["status"] == "Van":
+        # We need to worry about adjacent spaces.
+        set_place_values(space_number, status="Empty")
+        set_place_values(space_number - 1, status="Empty")
+        set_place_values(space_number + 1, status="Empty")
+        return JsonResponse({"success": True})
+
+    if space_vals["status"] != "Adjacent":
+        # We know it's not adjacent and it's not a van or motorcycle space.
+        # We can just set it to Empty.
+        set_place_values(space_number, status="Empty")
+        return JsonResponse({"success": True})
+
+    # If we got this far something went wrong.
+    return JsonResponse({"success": False})
+
 
 
 def is_full():
@@ -145,13 +168,3 @@ def is_full():
     return JsonResponse({"full": res == 0})
 
 
-# class ParkingPlaceViewSet(viewsets.ModelViewSet):
-#     """View for managing parking apis"""
-#     serializer_class = serializers.ParkingPlaceSerializer
-#     queryset = ParkingPlace.objects.all()
-
-#     def get_queryset(self):
-#         """Retrieve parking lot (all parking places in DB)."""
-#         return self.queryset.order_by('id')
-
-#     def update(self, **updates):
