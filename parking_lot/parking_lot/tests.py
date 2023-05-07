@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from parking_place.models import ParkingPlace
 
-from parking_place.views import free_space, is_full
+from parking_place.views import free_space, how_many_spaces_are_vans, is_full
 
 # RECIPES_URL = reverse('recipe-list')
 
@@ -90,6 +90,18 @@ class ParkingLotApiTests(TestCase):
         set_place_values(lot[2].id, "Car", "Full")
         set_place_values(lot[3].id, "Car", "Adjacent")
         set_place_values(lot[4].id, "Van", "Full")
-        res = test_how_many_spaces_are_vans()
+        res = how_many_spaces_are_vans()
         self.assertEqual(res.status_code, 200)
         self.assertEqual({"van-usage": 4}, json.loads(res.content))
+        # Now empty the van spot and make sure it goes down by one.
+        set_place_values(lot[4].id, "Van", "Empty")
+        res = how_many_spaces_are_vans()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"van-usage": 3}, json.loads(res.content))
+        # Now remove adjacent spots and make sure it's 0.
+        set_place_values(lot[1].id, "Car", "Empty")
+        set_place_values(lot[3].id, "Car", "Empty")
+        res = how_many_spaces_are_vans()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"van-usage": 0}, json.loads(res.content))
+
