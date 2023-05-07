@@ -4,6 +4,19 @@ from django.http import HttpResponse, JsonResponse
 from parking_place.models import ParkingPlace
 
 
+def set_place_values(place_id: int, vehicle_type: str = None, status: str = None):
+    """
+    Change the vehicle_type and status of the parking place at id==place_id.
+    Change only types that are not None.
+    """
+    place = ParkingPlace.objects.get(id=place_id)
+    if vehicle_type:
+        place.vehicle_type = vehicle_type
+    if status:
+        place.status = status
+    place.save()
+
+
 def free_space():
     """Return number of remaining open spaces, motorcycle + car + van."""
     motorcycle_res = ParkingPlace.objects.filter(
@@ -28,7 +41,7 @@ def how_many_spaces_are_vans() -> int:
     return JsonResponse({"van-usage": total})
 
 
-def park(type: str) -> int:
+def park(vehicle_type: str) -> int:
     """
     Attempt to park a vehicle (motorcycle, car, or van). If succesful, return
     space number. Otherwise, return -1.
@@ -41,7 +54,74 @@ def park(type: str) -> int:
     # meaning that over time vans may become more difficult to park. I believe
     # that Python sets are lrus, but choosing from an ordered list might be more
     # efficient.
-    pass
+    if json.loads(is_full().content):
+        return JsonResponse({"id": -1})
+
+    space_dict = json.loads(free_space().content)
+
+    if vehicle_type.lower() == "motorcycle":
+        # Check first for motorcycle spaces, then cars spaces, then van spaces.
+        if space_dict["motorcycle"]:
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Motorcycle") & Q(status="Empty")
+            ).id
+        elif space_dict["car"]:
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Car") & Q(status="Empty")
+            ).id
+        else:
+            # There must be a van space available.
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Van") & Q(status="Empty")
+            ).id
+        set_place_values(space_number, status="Full")
+        return space_number
+    elif vehicle_type.lower() == "car":
+        # Check first for car spaces, then for van spaces.
+        if space_dict["car"]:
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Car") & Q(status="Empty")
+            ).id
+        else:
+            # There must be a van space available.
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Van") & Q(status="Empty")
+            ).id
+        set_place_values(space_number, status="Full")
+        return space_number
+    elif vehicle_type.lower() == "van":
+        # It's a van. Look for van spaces, if not available try for three
+        # car spaces.
+        if space_dict["van"]:
+            space_number = ParkingPlace.objects.filter(
+                Q(vehicle_type="Van") & Q(status="Empty")
+            ).id
+            set_place_values(space_number, status="Full")
+        elif space_dict["car"] > 2:
+            space_number = ParkingPlace.objects.raw(
+                "SELECT id FROM parking_place p"
+                "              JOIN parking_place q"
+                "              JOIN park_place r"
+                'WHERE p.vehicle_type="Car"'
+                '  AND p.status="Empty"'
+                '  AND q.vehicle_type="Car"'
+                '  AND q.status="Empty"'
+                '  AND r.vehicle_type="Car"'
+                '  AND r.status="Empty"'
+                "  AND q.id = p.id - 1"
+                "  AND r.id = p.id + 1"
+            )
+            if space_number:
+                set_place_values(space_number, status="Full")
+                set_place_values(space_number - 1, status="Adjacent")
+                set_place_values(space_number + 1, status="Adjacent")
+        else:
+            # There were no van spaces and not enough car spaces.
+            return -1
+    else:
+        # The input is bad
+        return JsonResponse({"id": -1})
+    return space_number
 
 
 def unpark(space_number: int) -> bool:

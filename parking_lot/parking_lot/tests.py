@@ -36,14 +36,6 @@ def create_parking_lot(num_places, **options):
     return lot
 
 
-def set_place_values(place_id: int, vehicle_type: str, status: str) -> bool:
-    place = ParkingPlace.objects.get(id=place_id)
-    place.vehicle_type = vehicle_type
-    place.status = status
-    place.save()
-    return place
-
-
 class ParkingLotApiTests(TestCase):
     def setUp(self):
         pass
@@ -105,3 +97,22 @@ class ParkingLotApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual({"van-usage": 0}, json.loads(res.content))
 
+    def test_park_car_success(self):
+        lot = create_parking_lot(5)
+        res = park("car")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"id": 7}, json.loads(res.content))
+        lot = ParkingPlace.objects.all().order_by("id")
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Full", "Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty"],
+        )
+
+    def test_park_car_failure(self):
+        lot = create_parking_lot(1)
+        res = park("car")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"id": 1}, json.loads(res.content))
+        res = park("car")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"id": 7}, json.loads(res.content))
