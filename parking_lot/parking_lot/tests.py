@@ -83,3 +83,13 @@ class ParkingLotApiTests(TestCase):
         res = free_space()
         self.assertEqual(res.status_code, 200)
         self.assertEqual({"motorcycle": 1, "car": 2, "van": 1}, json.loads(res.content))
+
+    def test_how_many_spaces_are_vans(self):
+        lot = create_parking_lot(5)
+        set_place_values(lot[1].id, "Car", "Adjacent")
+        set_place_values(lot[2].id, "Car", "Full")
+        set_place_values(lot[3].id, "Car", "Adjacent")
+        set_place_values(lot[4].id, "Van", "Full")
+        res = test_how_many_spaces_are_vans()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"van-usage": 4}, json.loads(res.content))

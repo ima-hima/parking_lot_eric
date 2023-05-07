@@ -18,9 +18,8 @@ def free_space():
     return JsonResponse({"motorcycle": motorcycle_res, "car": car_res, "van": van_res})
 
 
-def how_many_spaces_are_vans(self) -> int:
+def how_many_spaces_are_vans() -> int:
     """Return the total number of spaces used by vans."""
-    # With "Q()" and "&"
     van_spaces = ParkingPlace.objects.filter(
         Q(vehicle_type="Van") & Q(status="Full")
     ).count()
@@ -29,7 +28,7 @@ def how_many_spaces_are_vans(self) -> int:
     return JsonResponse({"van-usage": total})
 
 
-def park(self, type: str) -> int:
+def park(type: str) -> int:
     """
     Attempt to park a vehicle (motorcycle, car, or van). If succesful, return
     space number. Otherwise, return -1.
@@ -45,7 +44,7 @@ def park(self, type: str) -> int:
     pass
 
 
-def unpark(self, space_number: int) -> bool:
+def unpark(space_number: int) -> bool:
     """
     Remove the vehicle from a space. Return True if the space was taken, False
     otherwise. Only a boolean is returned because the type of vehicle in a
