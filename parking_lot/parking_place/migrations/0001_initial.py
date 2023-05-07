@@ -30,8 +30,8 @@ class Migration(migrations.Migration):
             name='ParkingPlace',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='app.statustype')),
-                ('vehicle_type', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='app.vehicletype')),
+                ('status', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='parking_place.statustype')),
+                ('vehicle_type', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='parking_place.vehicletype')),
             ],
         ),
     ]
