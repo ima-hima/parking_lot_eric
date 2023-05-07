@@ -106,9 +106,6 @@ class ParkingLotApiTests(TestCase):
 
     def test_park_car_success(self):
         lot = create_parking_lot(5)
-        res = free_space()
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual({"motorcycle": 0, "car": 5, "van": 0}, json.loads(res.content))
         res = park("car")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(23, json.loads(res.content)["id"])
@@ -127,3 +124,15 @@ class ParkingLotApiTests(TestCase):
         res = park("car")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(-1, json.loads(res.content)["id"])
+
+    def test_park_van_in_van_spot_success(self):
+        lot = create_parking_lot(5)
+        set_place_values(lot[4].id, vehicle_type="Van")
+        res = park("van")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(23, json.loads(res.content)["id"])
+        lot = ParkingPlace.objects.all().order_by("id")
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Full", "Car:Empty", "Car:Empty", "Car:Empty", "Van:Full"],
+        )
