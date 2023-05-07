@@ -6,18 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('parking_place', '0003_auto_20230506_1915'),
+        ("parking_place", "0003_auto_20230506_1915"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='parkingplace',
-            name='status',
-            field=models.TextField(choices=[('Empty', 'Empty'), ('Adjacent', 'Adjacent'), ('Full', 'Full')], max_length=8),
+            model_name="parkingplace",
+            name="status",
+            field=models.TextField(
+                choices=[
+                    ("Empty", "Empty"),
+                    ("Adjacent", "Adjacent"),
+                    ("Full", "Full"),
+                ],
+                max_length=8,
+            ),
         ),
         migrations.AlterField(
-            model_name='parkingplace',
-            name='vehicle_type',
-            field=models.TextField(choices=[('Motorcycle', 'Motorcycle'), ('Car', 'Car'), ('Van', 'Van')], max_length=10, unique=True),
+            model_name="parkingplace",
+            name="vehicle_type",
+            field=models.TextField(
+                choices=[("Motorcycle", "Motorcycle"), ("Car", "Car"), ("Van", "Van")],
+                max_length=10,
+                unique=True,
+            ),
         ),
     ]

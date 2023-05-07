@@ -4,20 +4,26 @@ from django.http import HttpResponse, JsonResponse
 from parking_place.models import ParkingPlace
 
 
-
-def free_space(self):
+def free_space():
     """Return number of remaining open spaces, motorcycle + car + van."""
-    free = ParkingPlace.objects.filter(status="Empty").count()
-
-    return JsonResponse({"free-spaces": free})
+    motorcycle_res = ParkingPlace.objects.filter(
+        Q(vehicle_type="Motorcycle") & Q(status="Empty")
+    ).count()
+    car_res = ParkingPlace.objects.filter(
+        Q(vehicle_type="Car") & Q(status="Empty")
+    ).count()
+    van_res = ParkingPlace.objects.filter(
+        Q(vehicle_type="Van") & Q(status="Empty")
+    ).count()
+    return JsonResponse({"motorcycle": motorcycle_res, "car": car_res, "van": van_res})
 
 
 def how_many_spaces_are_vans(self) -> int:
     """Return the total number of spaces used by vans."""
     # With "Q()" and "&"
     van_spaces = ParkingPlace.objects.filter(
-                                 Q(vehicle_type="Van") &
-                                 Q(status="Full")).count()
+        Q(vehicle_type="Van") & Q(status="Full")
+    ).count()
     adjacent_spaces = ParkingPlace.objects.filter(status="Adjacent").count()
     total = van_spaces + adjacent_spaces // 2 * 3
     return JsonResponse({"van-usage": total})
@@ -39,7 +45,6 @@ def park(self, type: str) -> int:
     pass
 
 
-
 def unpark(self, space_number: int) -> bool:
     """
     Remove the vehicle from a space. Return True if the space was taken, False
@@ -47,6 +52,7 @@ def unpark(self, space_number: int) -> bool:
     given space has not been tracked.
     """
     pass
+
 
 def is_full() -> bool:
     """
@@ -68,5 +74,3 @@ def is_full() -> bool:
 #         return self.queryset.order_by('id')
 
 #     def update(self, **updates):
-
-

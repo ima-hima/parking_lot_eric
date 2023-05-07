@@ -14,4 +14,5 @@ class ParkingPlaceAdmin(admin.ModelAdmin):
     )
     readonly_fields = ["id"]
 
+
 admin.site.register(ParkingPlace)

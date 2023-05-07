@@ -7,16 +7,15 @@ from django.test import TestCase
 from django.urls import reverse
 
 from parking_place.models import ParkingPlace
-# from parking_lot.serializers import ParkingPlaceSerializer
 
-from parking_place.views import is_full
+from parking_place.views import free_space, is_full
 
 # RECIPES_URL = reverse('recipe-list')
 
 
 def detail_url(space_id):
     """Create and return a parking place detail url."""
-    return reverse('parking_place', args=[id])
+    return reverse("parking_place", args=[id])
 
 
 def create_parking_place(**options):
@@ -44,8 +43,8 @@ def set_place_values(place_id: int, vehicle_type: str, status: str) -> bool:
     place.save()
     return place
 
-class ParkingLotApiTests(TestCase):
 
+class ParkingLotApiTests(TestCase):
     def setUp(self):
         pass
 
@@ -55,17 +54,32 @@ class ParkingLotApiTests(TestCase):
 
     def test_create_parking_lot(self):
         lot = create_parking_lot(5)
-        self.assertEqual([str(l) for l in lot], ["Car:Empty","Car:Empty","Car:Empty","Car:Empty","Car:Empty"])
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty", "Car:Empty"],
+        )
 
     def test_set_place_values(self):
         lot = create_parking_lot(5)
         set_place_values(lot[1].id, "Motorcycle", "Full")
         place = ParkingPlace.objects.get(id=lot[1].id)
         lot = ParkingPlace.objects.all().order_by("id")
-        self.assertEqual([str(l) for l in lot], ["Car:Empty","Motorcycle:Full","Car:Empty","Car:Empty","Car:Empty"])
+        self.assertEqual(
+            [str(l) for l in lot],
+            ["Car:Empty", "Motorcycle:Full", "Car:Empty", "Car:Empty", "Car:Empty"],
+        )
 
     def test_is_full_empty_lot(self):
         lot = create_parking_lot(5)
         res = is_full()
         self.assertEqual(res.status_code, 200)
         self.assertFalse(json.loads(res.content)["full"])
+
+    def test_free_space(self):
+        lot = create_parking_lot(5)
+        set_place_values(lot[1].id, "Motorcycle", "Empty")
+        set_place_values(lot[4].id, "Motorcycle", "Full")
+        set_place_values(lot[3].id, "Van", "Empty")
+        res = free_space()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"motorcycle": 1, "car": 2, "van": 1}, json.loads(res.content))

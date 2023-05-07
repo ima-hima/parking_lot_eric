@@ -8,30 +8,86 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='StatusType',
+            name="StatusType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.TextField(choices=[('Empty', 'Empty'), ('Adjacent', 'Adjacent'), ('Full', 'Full')], max_length=8)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.TextField(
+                        choices=[
+                            ("Empty", "Empty"),
+                            ("Adjacent", "Adjacent"),
+                            ("Full", "Full"),
+                        ],
+                        max_length=8,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VehicleType',
+            name="VehicleType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.TextField(choices=[('Motorcycle', 'Motorcycle'), ('Car', 'Car'), ('Van', 'Van')], max_length=10, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.TextField(
+                        choices=[
+                            ("Motorcycle", "Motorcycle"),
+                            ("Car", "Car"),
+                            ("Van", "Van"),
+                        ],
+                        max_length=10,
+                        unique=True,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ParkingPlace',
+            name="ParkingPlace",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='parking_place.statustype')),
-                ('vehicle_type', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='parking_place.vehicletype')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="parking_place.statustype",
+                    ),
+                ),
+                (
+                    "vehicle_type",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="parking_place.vehicletype",
+                    ),
+                ),
             ],
         ),
     ]
