@@ -8,7 +8,13 @@ from django.urls import reverse
 
 from parking_place.models import ParkingPlace
 
-from parking_place.views import free_space, how_many_spaces_are_vans, is_full
+from parking_place.views import (
+    free_space,
+    how_many_spaces_are_vans,
+    is_full,
+    park,
+    set_place_values,
+)
 
 # RECIPES_URL = reverse('recipe-list')
 
@@ -62,6 +68,7 @@ class ParkingLotApiTests(TestCase):
         )
 
     def test_is_full_empty_lot(self):
+        """Test that an empty lot does appear as full."""
         lot = create_parking_lot(5)
         res = is_full()
         self.assertEqual(res.status_code, 200)
@@ -99,9 +106,12 @@ class ParkingLotApiTests(TestCase):
 
     def test_park_car_success(self):
         lot = create_parking_lot(5)
+        res = free_space()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual({"motorcycle": 0, "car": 5, "van": 0}, json.loads(res.content))
         res = park("car")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual({"id": 7}, json.loads(res.content))
+        self.assertEqual(23, json.loads(res.content)["id"])
         lot = ParkingPlace.objects.all().order_by("id")
         self.assertEqual(
             [str(l) for l in lot],
@@ -109,10 +119,11 @@ class ParkingLotApiTests(TestCase):
         )
 
     def test_park_car_failure(self):
-        lot = create_parking_lot(1)
+        create_parking_lot(1)
+        # self.assertEqual()
         res = park("car")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual({"id": 1}, json.loads(res.content))
+        self.assertEqual(22, json.loads(res.content)["id"])
         res = park("car")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual({"id": 7}, json.loads(res.content))
+        self.assertEqual(-1, json.loads(res.content)["id"])

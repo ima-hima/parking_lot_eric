@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 
@@ -54,11 +56,10 @@ def park(vehicle_type: str) -> int:
     # meaning that over time vans may become more difficult to park. I believe
     # that Python sets are lrus, but choosing from an ordered list might be more
     # efficient.
-    if json.loads(is_full().content):
+    if json.loads(is_full().content)["full"]:
         return JsonResponse({"id": -1})
 
     space_dict = json.loads(free_space().content)
-
     if vehicle_type.lower() == "motorcycle":
         # Check first for motorcycle spaces, then cars spaces, then van spaces.
         if space_dict["motorcycle"]:
@@ -75,20 +76,20 @@ def park(vehicle_type: str) -> int:
                 Q(vehicle_type="Van") & Q(status="Empty")
             ).id
         set_place_values(space_number, status="Full")
-        return space_number
+        return JsonResponse({"id": space_number})
     elif vehicle_type.lower() == "car":
         # Check first for car spaces, then for van spaces.
         if space_dict["car"]:
-            space_number = ParkingPlace.objects.filter(
+            space_number = ParkingPlace.objects.values("id").filter(
                 Q(vehicle_type="Car") & Q(status="Empty")
-            ).id
+            )[0]["id"]
         else:
             # There must be a van space available.
             space_number = ParkingPlace.objects.filter(
                 Q(vehicle_type="Van") & Q(status="Empty")
             ).id
         set_place_values(space_number, status="Full")
-        return space_number
+        return JsonResponse({"id": space_number})
     elif vehicle_type.lower() == "van":
         # It's a van. Look for van spaces, if not available try for three
         # car spaces.
@@ -110,6 +111,7 @@ def park(vehicle_type: str) -> int:
                 '  AND r.status="Empty"'
                 "  AND q.id = p.id - 1"
                 "  AND r.id = p.id + 1"
+                "LIMIT 1;"
             )
             if space_number:
                 set_place_values(space_number, status="Full")
@@ -117,14 +119,14 @@ def park(vehicle_type: str) -> int:
                 set_place_values(space_number + 1, status="Adjacent")
         else:
             # There were no van spaces and not enough car spaces.
-            return -1
+            return JsonResponse({"id": -1})
     else:
         # The input is bad
         return JsonResponse({"id": -1})
-    return space_number
+    return JsonResponse({"id": space_number})
 
 
-def unpark(space_number: int) -> bool:
+def unpark(space_number: int):
     """
     Remove the vehicle from a space. Return True if the space was taken, False
     otherwise. Only a boolean is returned because the type of vehicle in a
@@ -133,7 +135,7 @@ def unpark(space_number: int) -> bool:
     pass
 
 
-def is_full() -> bool:
+def is_full():
     """
     Return True if lot is full, False otherwise. Note this does not mean there
     is space for a van or a car, as for instance, only a single motorcycle
