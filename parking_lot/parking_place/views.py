@@ -20,7 +20,7 @@ def set_place_values(place_id: int, vehicle_type: str = None, status: str = None
     place.save()
 
 
-def free_space():
+def free_space(request):
     """Return number of remaining open spaces, motorcycle + car + van."""
     motorcycle_res = ParkingPlace.objects.filter(
         Q(vehicle_type="Motorcycle") & Q(status="Empty")
@@ -34,7 +34,7 @@ def free_space():
     return JsonResponse({"motorcycle": motorcycle_res, "car": car_res, "van": van_res})
 
 
-def how_many_spaces_are_vans() -> int:
+def how_many_spaces_are_vans(request):
     """Return the total number of spaces used by vans."""
     van_spaces = ParkingPlace.objects.filter(
         Q(vehicle_type="Van") & Q(status="Full")
@@ -44,7 +44,7 @@ def how_many_spaces_are_vans() -> int:
     return JsonResponse({"van-usage": total})
 
 
-def park(vehicle_type: str) -> int:
+def park(request, vehicle_type: str) -> JsonResponse:
     """
     Attempt to park a vehicle (motorcycle, car, or van). If succesful, return
     space number. Otherwise, return -1.
@@ -57,10 +57,10 @@ def park(vehicle_type: str) -> int:
     # meaning that over time vans may become more difficult to park. I believe
     # that Python sets are lrus, but choosing from an ordered list might be more
     # efficient.
-    if json.loads(is_full().content)["full"]:
+    if json.loads(is_full(request).content)["full"]:
         return JsonResponse({"id": -1})
 
-    space_dict = json.loads(free_space().content)
+    space_dict = json.loads(free_space(request).content)
     if vehicle_type.lower() == "motorcycle":
         # Check first for motorcycle spaces, then cars spaces, then van spaces.
         if space_dict["motorcycle"]:
@@ -126,7 +126,7 @@ def park(vehicle_type: str) -> int:
     return JsonResponse({"id": space_number})
 
 
-def unpark(space_number: int):
+def unpark(request, space_number: int):
     """
     Remove the vehicle from a space. Return True if the space was taken, False
     otherwise. Only a boolean is returned because the type of vehicle in a
@@ -157,7 +157,7 @@ def unpark(space_number: int):
 
 
 
-def is_full():
+def is_full(request):
     """
     Return True if lot is full, False otherwise. Note this does not mean there
     is space for a van or a car, as for instance, only a single motorcycle
