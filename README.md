@@ -36,9 +36,9 @@ oo# Parking lot project
 
 ##### Running the project
 
-1. `git clone https://github.com/ima-hima/parking_lot.git`
+1. `git clone https://github.com/ima-hima/parking_lot_eric.git`
 2. A docker image is provided. To use the image, it will need to be built, and an initial database will need to be created:
-    1. `docker build`
+    1. `docker build .`
     1. `docker compose run --rm app sh -c "python manage.py makemigrations`
     1. `docker compose run --rm app sh -c "python manage.py migrate`
 1. On `docker compose up` a parking_place table will be created with five empty car spots in it to allow you to play a (little) bit with the API.  
