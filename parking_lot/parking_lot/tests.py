@@ -2,7 +2,6 @@ from django.test import Client, TestCase
 import json
 
 from django.test import TestCase
-from django.urls import reverse
 
 from parking_place.models import ParkingPlace
 
@@ -104,7 +103,7 @@ class ParkingLotApiTests(TestCase):
     def test_park_car_success(self):
         c = Client()
         lot = create_parking_lot(5)
-        res = c.get("/park/car")
+        res = c.get("/park/car/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(23, json.loads(res.content)["id"])
         lot = ParkingPlace.objects.all().order_by("id")
@@ -116,10 +115,10 @@ class ParkingLotApiTests(TestCase):
     def test_park_car_failure(self):
         c = Client()
         create_parking_lot(1)
-        res = c.get("/park/car")
+        res = c.get("/park/car/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(22, json.loads(res.content)["id"])
-        res = c.get("/park/car")
+        res = c.get("/park/car/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(-1, json.loads(res.content)["id"])
 
@@ -127,7 +126,7 @@ class ParkingLotApiTests(TestCase):
         c = Client()
         lot = create_parking_lot(5)
         set_place_values(lot[4].id, vehicle_type="Van")
-        res = c.get("/park/van")
+        res = c.get("/park/van/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(37, json.loads(res.content)["id"])
         lot = ParkingPlace.objects.all().order_by("id")
@@ -139,7 +138,7 @@ class ParkingLotApiTests(TestCase):
     def test_park_van_in_car_spot_success(self):
         c = Client()
         lot = create_parking_lot(5)
-        res = c.get("/park/van")
+        res = c.get("/park/van/")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(29, json.loads(res.content)["id"])
         lot = ParkingPlace.objects.all().order_by("id")
@@ -152,7 +151,7 @@ class ParkingLotApiTests(TestCase):
     def test_unpark_van_taking_three_spaces(self):
         c = Client()
         lot = create_parking_lot(5)
-        res = c.get("/park/van")
+        res = c.get("/park/van/")
         self.assertEqual(res.status_code, 200)
         return_id = json.loads(res.content)["id"]
         self.assertEqual(44, return_id)
@@ -162,7 +161,7 @@ class ParkingLotApiTests(TestCase):
             ["Car:Adjacent", "Car:Van", "Car:Adjacent", "Car:Empty", "Car:Empty"],
         )
         # Now, unpark it.
-        res = c.get(f"/unpark/{return_id}")
+        res = c.get(f"/unpark/{return_id}/")
         self.assertEqual(res.status_code, 200)
         success = json.loads(res.content)['success']
         assert success
