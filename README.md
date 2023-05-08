@@ -41,5 +41,5 @@ oo# Parking lot project
     1. `docker build`
     1. `docker compose run --rm app sh -c "python manage.py makemigrations`
     1. `docker compose run --rm app sh -c "python manage.py migrate`
-1. Although there is no data in the database, you can hit the endpoints using `docker compose up`. 
+1. On `docker compose up` a parking_place table will be created with five empty car spots in it to allow you to play a (little) bit with the API.  
 1. To run the tests, `docker compose run --rm app sh -c "python manage.py test"`.
